@@ -118,10 +118,29 @@ socket.on("boardState",function(fen){
     renderBoard();
 });
 
-socket.on("move",function(move){
-    chess.move(move);
+socket.on("move", (move) => {
+   chess.move(move);
     renderBoard();
 });
+
+
+socket.on("gameOver", function(data) {
+    alert(`Game Over! ${data.winner} wins!`);
+
+    const gameOverMessage = document.createElement("div");
+gameOverMessage.classList.add("absolute", "top-4", "left-1/2", "transform", "-translate-x-1/2", "bg-red-600", "text-white", "px-4", "py-2", "rounded");
+gameOverMessage.innerHTML = `
+    <h2 class="text-center text-xl font-bold">Game Over! ${data.winner} wins!</h2>
+    <button class="mt-4 px-4 py-2 bg-blue-500 <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" onclick="restartGame()">Restart</button>`;
+
+
+
+
+
+document.body.appendChild(gameOverMessage);
+
+});
+
 
 
 

@@ -32,30 +32,48 @@ io.on("connection", (socket) => {
     }
 
     socket.on("move", (move) => {
-        try {
-            if ((chess.turn() === "w" && socket.id !== players.white) ||
-                (chess.turn() === "b" && socket.id !== players.black)) {
-                return;
-            }
-
-            const result = chess.move(move);
-            if (result) {
-                io.emit("move", move);
-                io.emit("boardState", chess.fen());
-            } else {
-                socket.emit("invalidMove", move);
-                console.log("Invalid move", move);
-            }
-        } catch (err) {
-            console.error("Move error:", err);
-            socket.emit("invalidMove", move);
+         try {
+        if ((chess.turn() === "w" && socket.id !== players.white) ||
+            (chess.turn() === "b" && socket.id !== players.black)) {
+            return;
         }
+
+        const result = chess.move(move);
+        if (result) {
+            io.emit("move", move);
+            io.emit("boardState", chess.fen());
+
+            // Check if the game is over (checkmate)
+            if (chess.isCheckmate()) {
+    const winner = chess.turn() === "b" ? "White" : "Black"; // Fixed winner detection
+    console.log(`Game Over! ${winner} wins!`);
+    io.emit("gameOver", { winner });
+}
+
+        } else {
+            socket.emit("invalidMove", move);
+            console.log("Invalid move", move);
+        }
+    } catch (err) {
+        console.error("Move error:", err);
+        socket.emit("invalidMove", move);
+    }
     });
 
     socket.on("disconnect", () => {
-        if (socket.id === players.white) players.white = null;
-        if (socket.id === players.black) players.black = null;
-        console.log("Disconnected:", socket.id);
+        socket.on("disconnect", () => {
+    if (socket.id === players.white) players.white = null;
+    if (socket.id === players.black) players.black = null;
+
+    // **Reset the game when both players leave**
+    if (!players.white && !players.black) {
+        chess.reset();
+        io.emit("boardState", chess.fen());
+    }
+
+    console.log("Disconnected:", socket.id);
+});
+
     });
 });
 
