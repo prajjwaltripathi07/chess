@@ -50,7 +50,7 @@ This is a real-time multiplayer chess game built using Node.js, Socket.IO, and t
 
 Below is a preview of the chessboard:
 
-![Chessboard Preview](public/images/chessboard-preview.png)
+![Chessboard Preview](image.png)
 
 ## File Structure
 
