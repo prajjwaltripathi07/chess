@@ -125,21 +125,37 @@ socket.on("move", (move) => {
 
 
 socket.on("gameOver", function(data) {
-    alert(`Game Over! ${data.winner} wins!`);
-
+    // Create the game-over message dynamically
     const gameOverMessage = document.createElement("div");
-gameOverMessage.classList.add("absolute", "top-4", "left-1/2", "transform", "-translate-x-1/2", "bg-red-600", "text-white", "px-4", "py-2", "rounded");
-gameOverMessage.innerHTML = `
-    <h2 class="text-center text-xl font-bold">Game Over! ${data.winner} wins!</h2>
-    <button class="mt-4 px-4 py-2 bg-blue-500 <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" onclick="restartGame()">Restart</button>`;
+    gameOverMessage.classList.add("game-over-message", "absolute", "top-4", "left-1/2", "transform", "-translate-x-1/2", "bg-red-600", "text-white", "px-4", "py-2", "rounded");
+    gameOverMessage.innerHTML = `
+        <h2 class="text-center text-xl font-bold">Game Over! ${data.winner} wins!</h2>
+        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" onclick="restartGame()">Restart</button>
+    `;
 
-
-
-
-
-document.body.appendChild(gameOverMessage);
-
+    document.body.appendChild(gameOverMessage);
 });
+
+  
+
+function restartGame() {
+    socket.emit("restartGame");
+
+    // Remove the restart block from the screen
+    const gameOverMessage = document.querySelector(".game-over-message");
+    if (gameOverMessage) {
+        gameOverMessage.remove();
+    }
+}
+
+// Listen for game restart event
+socket.on("gameRestarted", function () {
+    chess.reset();
+    renderBoard();
+});
+
+
+
 
 
 

@@ -75,7 +75,16 @@ io.on("connection", (socket) => {
 });
 
     });
+
+    socket.on("restartGame", () => {
+        chess.reset();
+        io.emit("boardState", chess.fen());
+        io.emit("gameRestarted"); // Notify players
+    });
 });
+
+
+
 
 server.listen(3000, () => {
     console.log("Server running on http://localhost:3000");
