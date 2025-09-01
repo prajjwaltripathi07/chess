@@ -8,8 +8,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socket(server);
 
-const chess = new Chess();
-let players = { white: null, black: null };
+// Store multiple games
+let games = {};
+let gameCounter = 1;
 
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
@@ -21,70 +22,102 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
     console.log("New connection:", socket.id);
 
-    if (!players.white) {
-        players.white = socket.id;
-        socket.emit("playRole", "w");
-    } else if (!players.black) {
-        players.black = socket.id;
-        socket.emit("playRole", "b");
-    } else {
-        socket.emit("spectatorRole");
+    // Find an available game or create a new one
+    let assignedGame = null;
+    for (const gameId in games) {
+        const game = games[gameId];
+        if (!game.players.white || !game.players.black) {
+            assignedGame = game;
+            break;
+        }
     }
 
-    socket.on("move", (move) => {
-         try {
-        if ((chess.turn() === "w" && socket.id !== players.white) ||
-            (chess.turn() === "b" && socket.id !== players.black)) {
-            return;
-        }
+    if (!assignedGame) {
+        const newGameId = `game-${gameCounter++}`;
+        assignedGame = {
+            id: newGameId,
+            chess: new (Chess)(),
+            players: { white: null, black: null }
+        };
+        games[newGameId] = assignedGame;
+    }
 
-        const result = chess.move(move);
-        if (result) {
-            io.emit("move", move);
-            io.emit("boardState", chess.fen());
+    // Assign player to the game
+    if (!assignedGame.players.white) {
+        assignedGame.players.white = socket.id;
+        socket.join(assignedGame.id);
+        socket.emit("playRole", { role: "w", gameId: assignedGame.id });
+        console.log(`Player White assigned in ${assignedGame.id}`);
+    } else if (!assignedGame.players.black) {
+        assignedGame.players.black = socket.id;
+        socket.join(assignedGame.id);
+        socket.emit("playRole", { role: "b", gameId: assignedGame.id });
+        console.log(`Player Black assigned in ${assignedGame.id}`);
+    }
 
-            // Check if the game is over (checkmate)
-            if (chess.isCheckmate()) {
-    const winner = chess.turn() === "b" ? "White" : "Black"; // Fixed winner detection
-    console.log(`Game Over! ${winner} wins!`);
-    io.emit("gameOver", { winner });
-}
+    // Send initial board state
+    socket.emit("boardState", assignedGame.chess.fen());
 
-        } else {
+    // Handle moves
+    socket.on("move", ({ move, gameId }) => {
+        const game = games[gameId];
+        if (!game) return;
+
+        try {
+            const { chess, players } = game;
+
+            if ((chess.turn() === "w" && socket.id !== players.white) ||
+                (chess.turn() === "b" && socket.id !== players.black)) {
+                return;
+            }
+
+            const result = chess.move(move);
+            if (result) {
+                io.to(gameId).emit("move", move);
+                io.to(gameId).emit("boardState", chess.fen());
+
+                if (chess.isCheckmate()) {
+                    const winner = chess.turn() === "b" ? "White" : "Black";
+                    io.to(gameId).emit("gameOver", { winner });
+                    console.log(`Game ${gameId} Over! ${winner} wins!`);
+                }
+            } else {
+                socket.emit("invalidMove", move);
+            }
+        } catch (err) {
+            console.error("Move error:", err);
             socket.emit("invalidMove", move);
-            console.log("Invalid move", move);
         }
-    } catch (err) {
-        console.error("Move error:", err);
-        socket.emit("invalidMove", move);
-    }
     });
 
+    // Restart game manually
+    socket.on("restartGame", (gameId) => {
+        const game = games[gameId];
+        if (!game) return;
+
+        game.chess.reset();
+        io.to(gameId).emit("boardState", game.chess.fen());
+        io.to(gameId).emit("gameRestarted");
+    });
+
+    // Handle disconnect
     socket.on("disconnect", () => {
-        socket.on("disconnect", () => {
-    if (socket.id === players.white) players.white = null;
-    if (socket.id === players.black) players.black = null;
+        console.log("Disconnected:", socket.id);
 
-    // **Reset the game when both players leave**
-    if (!players.white && !players.black) {
-        chess.reset();
-        io.emit("boardState", chess.fen());
-    }
+        // Remove player from their game
+        for (const gameId in games) {
+            const game = games[gameId];
+            if (game.players.white === socket.id) game.players.white = null;
+            if (game.players.black === socket.id) game.players.black = null;
 
-    console.log("Disconnected:", socket.id);
-});
-
-    });
-
-    socket.on("restartGame", () => {
-        chess.reset();
-        io.emit("boardState", chess.fen());
-        io.emit("gameRestarted"); // Notify players
+            // If both players left, delete the game
+            if (!game.players.white && !game.players.black) {
+                delete games[gameId];
+                console.log(`Deleted ${gameId} (empty)`);
+            }
+        }
     });
 });
-
-
-
 
 server.listen(3000, () => {
     console.log("Server running on http://localhost:3000");
