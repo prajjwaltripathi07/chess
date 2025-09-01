@@ -1,73 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Multiplayer Chess</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: space-between;
-            padding: 20px;
-        }
+  <meta charset="UTF-8">
+  <title>Multiplayer Chess</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
 
-        #board {
-            display: grid;
-            grid-template-columns: repeat(8, 60px);
-            grid-template-rows: repeat(8, 60px);
-            border: 2px solid black;
-        }
+    h1 {
+      margin: 20px 0;
+    }
 
-        .square {
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-        }
+    #status {
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
 
-        .light { background-color: #f0d9b5; }
-        .dark { background-color: #b58863; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+      margin: 0 auto;
+      border: 4px solid #333;
+    }
 
-        #chat {
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-        }
+    .square {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      cursor: pointer;
+    }
 
-        #chatBox {
-            border: 1px solid #ccc;
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
+    .light {
+      background: #f0d9b5;
+    }
 
-        #chatInput {
-            width: 80%;
-            padding: 5px;
-        }
+    .dark {
+      background: #b58863;
+    }
 
-        #sendBtn {
-            width: 18%;
-            padding: 5px;
-        }
-    </style>
+    .piece.white {
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
+    }
+
+    .piece.black {
+      color: #000;
+      text-shadow: 1px 1px 2px #fff;
+    }
+
+    .chat-container {
+      margin-top: 20px;
+      width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chatWindow {
+      height: 200px;
+      overflow-y: auto;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+
+    .chat-input-container {
+      display: flex;
+      padding: 10px;
+    }
+
+    #chatInput {
+      flex: 1;
+      padding: 8px;
+    }
+
+    #sendBtn {
+      padding: 8px 12px;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div id="board"></div>
+  <h1>Multiplayer Chess</h1>
+  <div id="status">Connecting...</div>
+  <div id="board" class="board"></div>
 
-    <div id="chat">
-        <div id="chatBox"></div>
-        <div>
-            <input type="text" id="chatInput" placeholder="Type message..." />
-            <button id="sendBtn">Send</button>
-        </div>
+  <div class="chat-container">
+    <div id="chatWindow"></div>
+    <div class="chat-input-container">
+      <input id="chatInput" type="text" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
     </div>
+  </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
-    <script src="/js/chessgame.js"></script>
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- chess.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+  <!-- Your frontend logic -->
+  <script src="/js/client.js"></script>
 </body>
 </html>
