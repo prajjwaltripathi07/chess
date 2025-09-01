@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chess Game</title>
+  <title><%= title %></title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .square.highlight { background-color: #ffdd57 !important; }
     .piece:hover { transform: scale(1.2); transition: transform 0.1s ease; }
     .game-over-message { animation: fadeIn 0.3s ease-in-out; text-align: center; padding: 10px; }
     .piece.dragging { opacity: 0.5; }
-    .square { transition: box-shadow 0.1s ease-in-out; display: flex; align-items: center; justify-content: center; }
     .chessboard {
       display: grid;
       grid-template-columns: repeat(8, minmax(0, 1fr));
@@ -19,32 +18,27 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       border-radius: 10px;
     }
-    .piece.white { color: white; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1)); }
-    .piece.black { color: black; }
-    .flipped { transform: rotate(180deg); }
+    .square { display: flex; align-items: center; justify-content: center; }
     .square.light { background-color: #f0d9b5; }
     .square.dark { background-color: #b58863; }
     .piece { font-size: 36px; cursor: pointer; }
-    .piece.draggable { cursor: grab; }
     .flipped .piece { transform: rotate(180deg); }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] text-white">
+<body class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] text-white">
 
-  <div class="flex flex-col md:flex-row gap-6 p-6">
+  <h1 class="text-2xl font-bold mb-4">Multiplayer Chess</h1>
+  <div class="flex gap-6">
     <!-- Chessboard -->
-    <div class="flex justify-center items-center bg-zinc-900 p-4 rounded-lg shadow-lg">
-      <div class="chessboard"></div>
-    </div>
+    <div class="chessboard w-96 h-96"></div>
 
-    <!-- Chat Section -->
-    <div class="flex flex-col bg-zinc-800 p-4 rounded-lg shadow-lg w-80">
-      <h2 class="text-lg font-bold mb-2">Game Chat</h2>
-      <div id="chatBox" class="flex-1 bg-zinc-900 p-2 rounded overflow-y-auto h-80"></div>
-      <div class="flex mt-2">
-        <input id="chatInput" type="text" placeholder="Type a message..."
-          class="flex-1 px-2 py-1 rounded-l bg-zinc-700 focus:outline-none">
-        <button id="sendChat" class="px-3 py-1 bg-blue-500 rounded-r">Send</button>
+    <!-- Chat box -->
+    <div class="w-64 bg-zinc-800 rounded-lg shadow p-3 flex flex-col">
+      <h2 class="text-lg font-semibold mb-2">Chat</h2>
+      <div id="chatBox" class="flex-1 overflow-y-auto border rounded p-2 bg-zinc-900"></div>
+      <div class="mt-2 flex">
+        <input id="chatInput" type="text" class="flex-1 p-2 rounded-l bg-zinc-700 text-white" placeholder="Type message...">
+        <button id="sendBtn" class="bg-blue-600 px-3 rounded-r">Send</button>
       </div>
     </div>
   </div>
