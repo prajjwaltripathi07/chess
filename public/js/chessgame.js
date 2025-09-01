@@ -1,9 +1,11 @@
 const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
-const chatForm = document.querySelector("#chatForm");
-const chatInput = document.querySelector("#chatInput");
-const chatBox = document.querySelector("#chatBox");
+// ==================== CHAT FEATURE ====================
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatMessages = document.getElementById("chat-messages");
+
 
 let draggedPiece = null;
 let sourceSquare = null;
@@ -151,20 +153,40 @@ socket.on("gameRestarted", () => {
 });
 
 // ==================== CHAT FEATURE ====================
+
+// Select correct elements
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatMessages = document.getElementById("chat-messages");
+
+// Send message
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  if (chatInput.value.trim() !== "") {
-    socket.emit("chatMessage", chatInput.value);
+  const msg = chatInput.value.trim();
+  if (msg !== "") {
+    socket.emit("chatMessage", msg);
     chatInput.value = "";
   }
 });
 
+// Receive message
 socket.on("chatMessage", (data) => {
-  const msgElement = document.createElement("div");
-  msgElement.classList.add("chat-msg");
-  msgElement.innerHTML = `<b>${data.sender.slice(0, 5)}:</b> ${data.message}`;
-  chatBox.appendChild(msgElement);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add(
+    "p-2",
+    "rounded",
+    "max-w-[80%]",
+    "break-words",
+    data.sender === socket.id
+      ? "bg-blue-600 self-end text-right ml-auto"
+      : "bg-gray-700"
+  );
+
+  msgDiv.innerHTML = `<strong>${data.sender.slice(0, 5)}:</strong> ${data.message}`;
+  chatMessages.appendChild(msgDiv);
+
+  // Auto-scroll
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 });
 
 renderBoard();
