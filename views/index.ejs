@@ -1,52 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .square.highlight { background-color: #ffdd57 !important; }
-    .piece:hover { transform: scale(1.2); transition: transform 0.1s ease; }
-    .game-over-message { animation: fadeIn 0.3s ease-in-out; text-align: center; padding: 10px; }
-    .piece.dragging { opacity: 0.5; }
-    .chessboard {
-      display: grid;
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-      grid-template-rows: repeat(8, minmax(0, 1fr));
-      width: 400px; height: 400px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      border-radius: 10px;
-    }
-    .square { display: flex; align-items: center; justify-content: center; }
-    .square.light { background-color: #f0d9b5; }
-    .square.dark { background-color: #b58863; }
-    .piece { font-size: 36px; cursor: pointer; }
-    .white { color: #fff; text-shadow: 1px 1px 2px black; }
-    .black { color: #000; text-shadow: 1px 1px 2px white; }
-    .flipped .piece { transform: rotate(180deg); }
-  </style>
+    <meta charset="UTF-8" />
+    <title>Multiplayer Chess</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 2px solid black;
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        .light { background-color: #f0d9b5; }
+        .dark { background-color: #b58863; }
+
+        #chat {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chatBox {
+            border: 1px solid #ccc;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        #chatInput {
+            width: 80%;
+            padding: 5px;
+        }
+
+        #sendBtn {
+            width: 18%;
+            padding: 5px;
+        }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] text-white">
+<body>
+    <div id="board"></div>
 
-  <h1 class="text-2xl font-bold mb-4">Multiplayer Chess</h1>
-  <div class="flex gap-6">
-    <!-- Chessboard -->
-    <div class="chessboard w-96 h-96"></div>
-
-    <!-- Chat box -->
-    <div class="w-64 bg-zinc-800 rounded-lg shadow p-3 flex flex-col">
-      <h2 class="text-lg font-semibold mb-2">Chat</h2>
-      <div id="chatBox" class="flex-1 overflow-y-auto border rounded p-2 bg-zinc-900"></div>
-      <div class="mt-2 flex">
-        <input id="chatInput" type="text" class="flex-1 p-2 rounded-l bg-zinc-700 text-white" placeholder="Type message...">
-        <button id="sendBtn" class="bg-blue-600 px-3 rounded-r">Send</button>
-      </div>
+    <div id="chat">
+        <div id="chatBox"></div>
+        <div>
+            <input type="text" id="chatInput" placeholder="Type message..." />
+            <button id="sendBtn">Send</button>
+        </div>
     </div>
-  </div>
 
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-  <script src="/js/chessgame.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+    <script src="/js/chessgame.js"></script>
 </body>
 </html>
