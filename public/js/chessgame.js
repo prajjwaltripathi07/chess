@@ -38,8 +38,20 @@ function renderBoard() {
 // Convert piece to unicode
 function pieceToUnicode(piece) {
     const map = {
-        p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
-        P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+        // p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+        // P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+         k:"♔", 
+       q:"♕" ,
+       r:"♖" ,
+       b:"♗" ,
+       n:"♘" ,
+       p:"♙" ,
+       K:"♚" ,
+       Q:"♛ ",
+       R:"♜",
+       B:"♝",
+       N:"♞",
+       P:"♟"
     };
     return map[piece.type] || "";
 }
