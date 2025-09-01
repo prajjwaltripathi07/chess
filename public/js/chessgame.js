@@ -35,25 +35,13 @@ function renderBoard() {
     });
 }
 
-// Convert piece to unicode
+// ✅ Convert piece to proper unicode (white vs black)
 function pieceToUnicode(piece) {
     const map = {
-        // p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
-        // P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
-         k:"♔", 
-       q:"♕" ,
-       r:"♖" ,
-       b:"♗" ,
-       n:"♘" ,
-       p:"♙" ,
-       K:"♚" ,
-       Q:"♛ ",
-       R:"♜",
-       B:"♝",
-       N:"♞",
-       P:"♟"
+        w: { p: "♙", r: "♖", n: "♘", b: "♗", q: "♕", k: "♔" },
+        b: { p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚" }
     };
-    return map[piece.type] || "";
+    return map[piece.color][piece.type];
 }
 
 // Handle moves
