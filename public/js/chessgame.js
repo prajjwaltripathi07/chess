@@ -1,14 +1,22 @@
 const socket = io();
+const chess = new Chess();
 const boardElement = document.getElementById("board");
-const chatBox = document.getElementById("chatBox");
+const statusElement = document.getElementById("status");
+const chatWindow = document.getElementById("chatWindow");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const chess = new Chess();
 let role = null;
+let room = null;
 
-socket.on("playRole", (assignedRole) => {
-    role = assignedRole;
+socket.on("playerRole", (data) => {
+    role = data.role;
+    room = data.room;
+    statusElement.textContent = `${role} joined ${room}. Waiting for opponent...`;
+});
+
+socket.on("gameStart", (msg) => {
+    statusElement.textContent = msg + ` You are ${role}.`;
     renderBoard();
 });
 
@@ -17,21 +25,31 @@ socket.on("move", (move) => {
     renderBoard();
 });
 
-socket.on("chatMessage", ({ sender, text }) => {
+socket.on("chatMessage", (data) => {
     const msgEl = document.createElement("div");
-    msgEl.textContent = `${sender}: ${text}`;
-    chatBox.appendChild(msgEl);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    msgEl.textContent = `${data.player}: ${data.message}`;
+    chatWindow.appendChild(msgEl);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 });
 
 sendBtn.addEventListener("click", () => {
-    const msg = chatInput.value.trim();
-    if (msg) {
+    const msg = chatInput.value;
+    if (msg.trim() !== "") {
         socket.emit("chatMessage", msg);
         chatInput.value = "";
     }
 });
 
+// Piece symbols
+function pieceToUnicode(piece) {
+    const map = {
+        w: { p: "♙", r: "♖", n: "♘", b: "♗", q: "♕", k: "♔" },
+        b: { p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚" }
+    };
+    return map[piece.color][piece.type];
+}
+
+// Render chessboard (with flipping for Player 2)
 function renderBoard() {
     const board = chess.board();
     boardElement.innerHTML = "";
@@ -44,7 +62,6 @@ function renderBoard() {
         cols.forEach((square, cIdx) => {
             const squareEl = document.createElement("div");
 
-            // Adjust coloring when flipped
             const actualR = role === "Player 2" ? 7 - rIdx : rIdx;
             const actualC = role === "Player 2" ? 7 - cIdx : cIdx;
 
@@ -77,30 +94,9 @@ function renderBoard() {
 }
 
 function handleMove(from, to) {
-    if (!role.startsWith("Player")) return;
-
-    const move = chess.move({
-        from: toSquareName(from),
-        to: toSquareName(to),
-        promotion: "q"
-    });
-
+    const move = chess.move({ from, to, promotion: "q" });
     if (move) {
         renderBoard();
         socket.emit("move", move);
     }
-}
-
-function toSquareName(coord) {
-    const file = "abcdefgh"[coord[0]];
-    const rank = parseInt(coord[1]) + 1;
-    return file + rank;
-}
-
-function pieceToUnicode(piece) {
-    const map = {
-        p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
-        P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
-    };
-    return map[piece.type === piece.type.toLowerCase() ? piece.type : piece.type.toUpperCase()];
 }
