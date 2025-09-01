@@ -1,75 +1,109 @@
 const express = require("express");
+const socket = require("socket.io");
 const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
 const { Chess } = require("chess.js");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = socket(server);
 
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 
-const chess = new Chess();
-let players = {};
-let gameInProgress = false;
-
 app.get("/", (req, res) => {
-  res.render("index");
+    res.render("index", { title: "Chess Game" });
 });
 
+// Store rooms
+let rooms = {};
+let roomCounter = 1;
+
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+    console.log("New connection:", socket.id);
 
-  // Assign roles
-  if (!players.white) {
-    players.white = socket.id;
-    socket.emit("playRole", "w");
-  } else if (!players.black) {
-    players.black = socket.id;
-    socket.emit("playRole", "b");
-  } else {
-    socket.emit("spectatorRole");
-  }
-
-  socket.emit("boardState", chess.fen());
-
-  // Handle moves
-  socket.on("move", (move) => {
-    try {
-      const result = chess.move(move);
-      if (result) {
-        io.emit("move", move);
-        if (chess.isGameOver()) {
-          let winner = chess.turn() === "w" ? "Black" : "White";
-          io.emit("gameOver", { winner });
+    // Find an available room or create new
+    let assignedRoom = null;
+    for (let roomId in rooms) {
+        if (rooms[roomId].players.length < 2) {
+            assignedRoom = roomId;
+            break;
         }
-      }
-    } catch (err) {
-      console.log("Invalid move:", err.message);
     }
-  });
+    if (!assignedRoom) {
+        assignedRoom = `room-${roomCounter++}`;
+        rooms[assignedRoom] = {
+            chess: new Chess(),
+            players: []
+        };
+    }
 
-  // Restart game
-  socket.on("restartGame", () => {
-    chess.reset();
-    io.emit("gameRestarted");
-  });
+    const room = rooms[assignedRoom];
+    room.players.push(socket.id);
+    socket.join(assignedRoom);
 
-  // Chat messages
-  socket.on("chatMessage", (data) => {
-    io.emit("chatMessage", data);
-  });
+    // Assign role
+    let role = room.players.length === 1 ? "w" : "b";
+    socket.emit("playRole", role);
+    socket.emit("boardState", room.chess.fen());
+    console.log(`Player ${socket.id} joined ${assignedRoom} as ${role}`);
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-    if (players.white === socket.id) delete players.white;
-    if (players.black === socket.id) delete players.black;
-  });
+    // Handle moves
+    socket.on("move", (move) => {
+        try {
+            const chess = room.chess;
+
+            if (
+                (chess.turn() === "w" && socket.id !== room.players[0]) ||
+                (chess.turn() === "b" && socket.id !== room.players[1])
+            ) {
+                return;
+            }
+
+            const result = chess.move(move);
+            if (result) {
+                io.to(assignedRoom).emit("move", move);
+                io.to(assignedRoom).emit("boardState", chess.fen());
+
+                if (chess.isCheckmate()) {
+                    const winner = chess.turn() === "b" ? "White" : "Black";
+                    io.to(assignedRoom).emit("gameOver", { winner });
+                }
+            } else {
+                socket.emit("invalidMove", move);
+            }
+        } catch (err) {
+            console.error("Move error:", err);
+            socket.emit("invalidMove", move);
+        }
+    });
+
+    // Chat feature
+    socket.on("chatMessage", (msg) => {
+        io.to(assignedRoom).emit("chatMessage", {
+            sender: socket.id,
+            text: msg
+        });
+    });
+
+    // Restart game
+    socket.on("restartGame", () => {
+        room.chess.reset();
+        io.to(assignedRoom).emit("boardState", room.chess.fen());
+        io.to(assignedRoom).emit("gameRestarted");
+    });
+
+    // Handle disconnect
+    socket.on("disconnect", () => {
+        console.log(`Player ${socket.id} left ${assignedRoom}`);
+        room.players = room.players.filter((id) => id !== socket.id);
+
+        if (room.players.length === 0) {
+            delete rooms[assignedRoom]; // remove empty room
+        }
+    });
 });
 
 server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+    console.log("Server running on http://localhost:3000");
 });
