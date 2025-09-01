@@ -1,11 +1,6 @@
 const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
-// ==================== CHAT FEATURE ====================
-const chatForm = document.getElementById("chat-form");
-const chatInput = document.getElementById("chat-input");
-const chatMessages = document.getElementById("chat-messages");
-
 
 let draggedPiece = null;
 let sourceSquare = null;
@@ -153,8 +148,6 @@ socket.on("gameRestarted", () => {
 });
 
 // ==================== CHAT FEATURE ====================
-
-// Select correct elements
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const chatMessages = document.getElementById("chat-messages");
