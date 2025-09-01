@@ -61,33 +61,5 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="/js/chessgame.js"></script>
-
-  <!-- Chat Script -->
-  <script>
-    const socket = io();
-
-    const chatForm = document.getElementById("chat-form");
-    const chatInput = document.getElementById("chat-input");
-    const chatMessages = document.getElementById("chat-messages");
-
-    // Send message
-    chatForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const msg = chatInput.value.trim();
-      if (msg !== "") {
-        socket.emit("chatMessage", msg);
-        chatInput.value = "";
-      }
-    });
-
-    // Receive message
-    socket.on("chatMessage", (data) => {
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("p-2", "rounded", data.sender === "You" ? "bg-blue-600 self-end text-right" : "bg-gray-700");
-      msgDiv.innerHTML = `<strong>${data.sender}:</strong> ${data.text}`;
-      chatMessages.appendChild(msgDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
-  </script>
 </body>
 </html>
