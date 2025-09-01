@@ -50,18 +50,15 @@ const renderBoard = () => {
         squareElement.appendChild(pieceElement);
       }
 
-      squareElement.addEventListener("dragover", function (e) {
-        e.preventDefault();
-      });
+      squareElement.addEventListener("dragover", (e) => e.preventDefault());
 
-      squareElement.addEventListener("drop", function (e) {
+      squareElement.addEventListener("drop", (e) => {
         e.preventDefault();
         if (draggedPiece) {
           const targetSquare = {
             row: parseInt(squareElement.dataset.row),
             col: parseInt(squareElement.dataset.col),
           };
-
           handleMove(sourceSquare, targetSquare);
         }
       });
@@ -83,35 +80,29 @@ const handleMove = (source, target) => {
     to: `${String.fromCharCode(target.col + 97)}${8 - target.row}`,
     promotion: "q",
   };
-
   socket.emit("move", move);
 };
 
 const getPieceUnicode = (piece) => {
   const UnicodePieces = {
-    k: "♔",
-    q: "♕",
-    r: "♖",
-    b: "♗",
-    n: "♘",
-    p: "♙",
-    K: "♚",
-    Q: "♛",
-    R: "♜",
-    B: "♝",
-    N: "♞",
-    P: "♟",
+    k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙",
+    K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟",
   };
   return UnicodePieces[piece.type] || "";
 };
 
-// Role assignment
-socket.on("playRole", function (role) {
+// SOCKET EVENTS
+socket.on("playRole", (role) => {
   playerRole = role;
   renderBoard();
 });
 
-socket.on("boardState", function (fen) {
+socket.on("spectatorRole", () => {
+  playerRole = null;
+  renderBoard();
+});
+
+socket.on("boardState", (fen) => {
   chess.load(fen);
   renderBoard();
 });
@@ -121,27 +112,17 @@ socket.on("move", (move) => {
   renderBoard();
 });
 
-// Game over message
-socket.on("gameOver", function (data) {
+socket.on("gameOver", (data) => {
   const gameOverMessage = document.createElement("div");
   gameOverMessage.classList.add(
-    "game-over-message",
-    "absolute",
-    "top-4",
-    "left-1/2",
-    "transform",
-    "-translate-x-1/2",
-    "bg-red-600",
-    "text-white",
-    "px-4",
-    "py-2",
-    "rounded"
+    "game-over-message", "absolute", "top-4", "left-1/2",
+    "transform", "-translate-x-1/2", "bg-red-600", "text-white",
+    "px-4", "py-2", "rounded"
   );
   gameOverMessage.innerHTML = `
-      <h2 class="text-center text-xl font-bold">Game Over! ${data.winner}!</h2>
-      <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" onclick="restartGame()">Restart</button>
+    <h2 class="text-center text-xl font-bold">Game Over! ${data.winner} wins!</h2>
+    <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" onclick="restartGame()">Restart</button>
   `;
-
   document.body.appendChild(gameOverMessage);
 });
 
@@ -151,9 +132,30 @@ function restartGame() {
   if (gameOverMessage) gameOverMessage.remove();
 }
 
-socket.on("gameRestarted", function () {
+socket.on("gameRestarted", () => {
   chess.reset();
   renderBoard();
+});
+
+// CHAT FEATURE
+const chatBox = document.getElementById("chatBox");
+const chatInput = document.getElementById("chatInput");
+const sendChat = document.getElementById("sendChat");
+
+sendChat.addEventListener("click", () => {
+  const msg = chatInput.value.trim();
+  if (msg) {
+    socket.emit("chatMessage", { role: playerRole, message: msg });
+    chatInput.value = "";
+  }
+});
+
+socket.on("chatMessage", (data) => {
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("mb-1");
+  msgDiv.innerHTML = `<span class="font-bold">${data.role || "Spectator"}:</span> ${data.message}`;
+  chatBox.appendChild(msgDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 
 renderBoard();
