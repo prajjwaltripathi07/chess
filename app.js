@@ -11,7 +11,65 @@ const io = socket(server);
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/", (req, res) => {const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const path = require("path");
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+
+let players = {};
+let playerCount = 0;
+
+io.on("connection", (socket) => {
+    if (playerCount < 2) {
+        playerCount++;
+        let playerName = playerCount === 1 ? "Player 1" : "Player 2";
+        players[socket.id] = playerName;
+
+        // Send role to client
+        socket.emit("playRole", playerName);
+
+        // Inform both clients of assigned players
+        io.emit("playerInfo", Object.values(players));
+
+        console.log(`${playerName} connected`);
+    } else {
+        socket.emit("playRole", "Spectator");
+    }
+
+    // Handle moves
+    socket.on("move", (move) => {
+        socket.broadcast.emit("move", move);
+    });
+
+    // Handle chat messages
+    socket.on("chatMessage", (msg) => {
+        io.emit("chatMessage", { sender: players[socket.id] || "Spectator", text: msg });
+    });
+
+    socket.on("disconnect", () => {
+        if (players[socket.id]) {
+            console.log(`${players[socket.id]} disconnected`);
+            delete players[socket.id];
+            playerCount--;
+            io.emit("playerInfo", Object.values(players));
+        }
+    });
+});
+
 app.get("/", (req, res) => {
+    res.render("index");
+});
+
+server.listen(3000, () => console.log("Server running on http://localhost:3000"));
+
     res.render("index", { title: "Chess Game" });
 });
 
