@@ -1,161 +1,82 @@
 const socket = io();
-const chess = new Chess();
-const boardElement = document.querySelector(".chessboard");
+let boardElement = document.querySelector(".chessboard");
+let role = null;
+let chess = new Chess();
 
-let draggedPiece = null;
-let sourceSquare = null;
-let playerRole = null;
+// Render chessboard
+function renderBoard() {
+    const board = chess.board();
+    boardElement.innerHTML = "";
+    board.forEach((row, rIdx) => {
+        row.forEach((square, cIdx) => {
+            const squareEl = document.createElement("div");
+            squareEl.classList.add("square", (rIdx + cIdx) % 2 === 0 ? "light" : "dark");
 
-const renderBoard = () => {
-  const board = chess.board();
-  boardElement.innerHTML = "";
+            if (square) {
+                const pieceEl = document.createElement("span");
+                pieceEl.textContent = pieceToUnicode(square);
+                pieceEl.classList.add("piece", square.color === "w" ? "white" : "black");
+                pieceEl.draggable = true;
+                pieceEl.addEventListener("dragstart", (e) => {
+                    e.dataTransfer.setData("from", `${cIdx}${rIdx}`);
+                });
+                squareEl.appendChild(pieceEl);
+            }
 
-  board.forEach((row, rowIndex) => {
-    row.forEach((square, squareIndex) => {
-      const squareElement = document.createElement("div");
-      squareElement.classList.add(
-        "square",
-        (rowIndex + squareIndex) % 2 === 0 ? "light" : "dark"
-      );
+            squareEl.addEventListener("dragover", (e) => e.preventDefault());
+            squareEl.addEventListener("drop", (e) => {
+                const from = e.dataTransfer.getData("from");
+                const to = `${cIdx}${rIdx}`;
+                handleMove(from, to);
+            });
 
-      squareElement.dataset.row = rowIndex;
-      squareElement.dataset.col = squareIndex;
-
-      if (square) {
-        const pieceElement = document.createElement("div");
-        pieceElement.classList.add(
-          "piece",
-          square.color === "w" ? "white" : "black"
-        );
-        pieceElement.innerText = getPieceUnicode(square);
-
-        if (playerRole === square.color) {
-          pieceElement.draggable = true;
-          pieceElement.classList.add("draggable");
-        }
-
-        pieceElement.addEventListener("dragstart", (e) => {
-          if (pieceElement.draggable) {
-            draggedPiece = pieceElement;
-            sourceSquare = { row: rowIndex, col: squareIndex };
-            e.dataTransfer.setData("text/plain", "");
-          }
+            boardElement.appendChild(squareEl);
         });
-
-        pieceElement.addEventListener("dragend", () => {
-          draggedPiece = null;
-          sourceSquare = null;
-        });
-
-        squareElement.appendChild(pieceElement);
-      }
-
-      squareElement.addEventListener("dragover", (e) => e.preventDefault());
-
-      squareElement.addEventListener("drop", (e) => {
-        e.preventDefault();
-        if (draggedPiece) {
-          const targetSquare = {
-            row: parseInt(squareElement.dataset.row),
-            col: parseInt(squareElement.dataset.col),
-          };
-          handleMove(sourceSquare, targetSquare);
-        }
-      });
-
-      boardElement.appendChild(squareElement);
     });
-  });
-
-  if (playerRole === "b") {
-    boardElement.classList.add("flipped");
-  } else {
-    boardElement.classList.remove("flipped");
-  }
-};
-
-const handleMove = (source, target) => {
-  const move = {
-    from: `${String.fromCharCode(source.col + 97)}${8 - source.row}`,
-    to: `${String.fromCharCode(target.col + 97)}${8 - target.row}`,
-    promotion: "q",
-  };
-  socket.emit("move", move);
-};
-
-const getPieceUnicode = (piece) => {
-  const UnicodePieces = {
-    k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙",
-    K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟",
-  };
-  return UnicodePieces[piece.type] || "";
-};
-
-// SOCKET EVENTS
-socket.on("playRole", (role) => {
-  playerRole = role;
-  renderBoard();
-});
-
-socket.on("spectatorRole", () => {
-  playerRole = null;
-  renderBoard();
-});
-
-socket.on("boardState", (fen) => {
-  chess.load(fen);
-  renderBoard();
-});
-
-socket.on("move", (move) => {
-  chess.move(move);
-  renderBoard();
-});
-
-socket.on("gameOver", (data) => {
-  const gameOverMessage = document.createElement("div");
-  gameOverMessage.classList.add(
-    "game-over-message", "absolute", "top-4", "left-1/2",
-    "transform", "-translate-x-1/2", "bg-red-600", "text-white",
-    "px-4", "py-2", "rounded"
-  );
-  gameOverMessage.innerHTML = `
-    <h2 class="text-center text-xl font-bold">Game Over! ${data.winner} wins!</h2>
-    <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded" onclick="restartGame()">Restart</button>
-  `;
-  document.body.appendChild(gameOverMessage);
-});
-
-function restartGame() {
-  socket.emit("restartGame");
-  const gameOverMessage = document.querySelector(".game-over-message");
-  if (gameOverMessage) gameOverMessage.remove();
 }
 
-socket.on("gameRestarted", () => {
-  chess.reset();
-  renderBoard();
-});
+// Convert piece to unicode
+function pieceToUnicode(piece) {
+    const map = {
+        p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+        P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+    };
+    return map[piece.type] || "";
+}
 
-// CHAT FEATURE
+// Handle moves
+function handleMove(from, to) {
+    const file = "abcdefgh";
+    const fromSq = file[from[0]] + (8 - from[1]);
+    const toSq = file[to[0]] + (8 - to[1]);
+
+    const move = { from: fromSq, to: toSq, promotion: "q" };
+    socket.emit("move", move);
+}
+
+// Socket events
+socket.on("playRole", (assignedRole) => { role = assignedRole; });
+socket.on("boardState", (fen) => { chess.load(fen); renderBoard(); });
+socket.on("move", (move) => { chess.move(move); renderBoard(); });
+socket.on("gameOver", ({ winner }) => alert(`${winner} wins!`));
+socket.on("gameRestarted", () => { alert("Game restarted!"); });
+
+// Chat handling
 const chatBox = document.getElementById("chatBox");
 const chatInput = document.getElementById("chatInput");
-const sendChat = document.getElementById("sendChat");
+const sendBtn = document.getElementById("sendBtn");
 
-sendChat.addEventListener("click", () => {
-  const msg = chatInput.value.trim();
-  if (msg) {
-    socket.emit("chatMessage", { role: playerRole, message: msg });
-    chatInput.value = "";
-  }
+sendBtn.addEventListener("click", () => {
+    const msg = chatInput.value.trim();
+    if (msg) {
+        socket.emit("chatMessage", msg);
+        chatInput.value = "";
+    }
 });
 
-socket.on("chatMessage", (data) => {
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("mb-1");
-  msgDiv.innerHTML = `<span class="font-bold">${data.role || "Spectator"}:</span> ${data.message}`;
-  chatBox.appendChild(msgDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
+socket.on("chatMessage", ({ sender, text }) => {
+    const msgEl = document.createElement("div");
+    msgEl.textContent = `${sender}: ${text}`;
+    chatBox.appendChild(msgEl);
+    chatBox.scrollTop = chatBox.scrollHeight;
 });
-
-renderBoard();
