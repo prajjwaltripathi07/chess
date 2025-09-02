@@ -65,11 +65,8 @@ const renderBoard = () => {
     });
   });
 
-  if (playerRole === "b") {
-    boardElement.classList.add("flipped");
-  } else {
-    boardElement.classList.remove("flipped");
-  }
+  if (playerRole === "b") boardElement.classList.add("flipped");
+  else boardElement.classList.remove("flipped");
 };
 
 const handleMove = (source, target) => {
@@ -83,18 +80,8 @@ const handleMove = (source, target) => {
 
 const getPieceUnicode = (piece) => {
   const unicodePieces = {
-    k: "♔",
-    q: "♕",
-    r: "♖",
-    b: "♗",
-    n: "♘",
-    p: "♙",
-    K: "♚",
-    Q: "♛",
-    R: "♜",
-    B: "♝",
-    N: "♞",
-    P: "♟",
+    k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙",
+    K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟",
   };
   return unicodePieces[piece.type] || "";
 };
@@ -152,7 +139,6 @@ const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const chatMessages = document.getElementById("chat-messages");
 
-// Send message
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const msg = chatInput.value.trim();
@@ -162,23 +148,17 @@ chatForm.addEventListener("submit", (e) => {
   }
 });
 
-// Receive message
 socket.on("chatMessage", (data) => {
   const msgDiv = document.createElement("div");
-  msgDiv.classList.add(
-    "p-2",
-    "rounded",
-    "max-w-[80%]",
-    "break-words",
-    data.sender === socket.id
-      ? "bg-blue-600 self-end text-right ml-auto"
-      : "bg-gray-700"
-  );
+  let classes = "p-2 rounded max-w-[80%] break-words";
 
-  msgDiv.innerHTML = `<strong>${data.sender.slice(0, 5)}:</strong> ${data.message}`;
+  if (data.sender === "Player1") classes += " bg-blue-600 self-end text-right ml-auto";
+  else if (data.sender === "Player2") classes += " bg-gray-700 self-start text-left";
+  else classes += " bg-yellow-600 self-center text-center"; // system messages
+
+  msgDiv.className = classes;
+  msgDiv.innerHTML = `<strong>${data.sender}:</strong> ${data.message}`;
   chatMessages.appendChild(msgDiv);
-
-  // Auto-scroll
   chatMessages.scrollTop = chatMessages.scrollHeight;
 });
 
